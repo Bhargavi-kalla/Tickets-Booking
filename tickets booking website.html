@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Booking App</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #0f0f23;
+      color: #e0e0e0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 24px;
+      background-color: #1a1a2e;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 28px;
+      color: #00bfff;
+    }
+
+    .section {
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .section label {
+      font-weight: 500;
+    }
+
+    .section select,
+    .section input {
+      padding: 8px 12px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background-color: #16213e;
+      color: #fff;
+    }
+
+    .seats-container {
+      margin: 24px 0;
+    }
+
+    .screen {
+      height: 6px;
+      width: 80%;
+      margin: 10px auto 20px;
+      background-color: #ddd;
+      border-radius: 6px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .row {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .seat {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background-color: #14bdac;
+      cursor: pointer;
+      transition:
+        background 0.2s,
+        transform 0.1s;
+    }
+
+    .seat:hover {
+      transform: scale(1.1);
+    }
+
+    .seat.selected {
+      background-color: #00bfff;
+      border-color: #00bfff;
+    }
+
+    .seat.occupied {
+      background-color: #999;
+      border-color: #999;
+      cursor: not-allowed;
+    }
+
+    .stats {
+      margin: 12px 0;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    #confirmBtn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 14px;
+      background-color: #00c0ef;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #confirmBtn:hover {
+      background-color: #009ec6;
+    }
+
+    .result {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      background-color: #14213d;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Ticket Booking</h1>
+
+    <!-- Event selection -->
+    <div class="section">
+      <label for="eventType">Event:</label>
+      <select id="eventType">
+        <option value="movie">Movie Session</option>
+        <option value="concert">Live Concert</option>
+        <option value="sports">Sports Match</option>
+      </select>
+    </div>
+
+    <!-- Date & Time -->
+    <div class="section">
+      <label for="date">Date:</label>
+      <input type="date" id="date" required />
+
+      <label for="time">Time:</label>
+      <input type="time" id="time" required />
+    </div>
+
+    <!-- Price info -->
+    <div class="section">
+      <p>Price per ticket: <span id="ticketPrice">₹100</span></p>
+    </div>
+
+    <!-- Screen -->
+    <h3>Screen</h3>
+    <div class="screen"></div>
+
+    <!-- Seats -->
+    <div class="seats-container">
+      <div class="row">
+        <div class="seat"></div>
+        <div class="seat"></div>
+        <div class="seat"></div>
+        <div class="seat occupied"></div>
+        <div class="seat"></div>
+        <div class="seat"></div>
+      </div>
+      <div class="row">
+        <div class="seat"></div>
+        <div class="seat"></div>
+        <div class="seat"></div>
+        <div class="seat"></div>
+        <div class="seat"></div>
+        <div class="seat"></div>
+      </div>
+      <div class="row">
+        <div class="seat"></div>
+        <div class="seat"></div>
+        <div class="seat"></div>
+        <div class="seat"></div>
+        <div class="seat"></div>
+        <div class="seat"></div>
+      </div>
+    </div>
+
+    <p class="stats">
+      You have selected <span id="count">0</span> seat(s) for a total of ₹<span id="total">0</span>
+    </p>
+
+    <button id="confirmBtn">Confirm Booking</button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    // Config prices
+    const prices = {
+      movie: 100,
+      concert: 250,
+      sports: 200,
+    };
+
+    // DOM elements
+    const selectEvent = document.getElementById("eventType");
+    const ticketPriceEl = document.getElementById("ticketPrice");
+    const dateInput = document.getElementById("date");
+    const timeInput = document.getElementById("time");
+    const seats = document.querySelectorAll(".seat:not(.occupied)");
+    const countSpan = document.getElementById("count");
+    const totalSpan = document.getElementById("total");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const resultDiv = document.getElementById("result");
+
+    // Update price when event changes
+    selectEvent.addEventListener("change", updateUI);
+    function updateUI() {
+      const eventType = selectEvent.value;
+      const price = prices[eventType];
+      ticketPriceEl.textContent = "₹" + price;
+      updateSelectedCount();
+    }
+
+    // Seat selection
+    seats.forEach((seat) => {
+      seat.addEventListener("click", () => {
+        if (seat.classList.contains("occupied")) return;
+        seat.classList.toggle("selected");
+        updateSelectedCount();
+      });
+    });
+
+    // Update selected count and total
+    function updateSelectedCount() {
+      const selectedSeats = document.querySelectorAll(".seat.selected");
+      const count = selectedSeats.length;
+      const eventType = selectEvent.value;
+      const price = prices[eventType];
+      const total = count * price;
+
+      countSpan.textContent = count;
+      totalSpan.textContent = total;
+    }
+
+    // Confirm booking
+    confirmBtn.addEventListener("click", () => {
+      const selectedSeats = document.querySelectorAll(".seat.selected");
+      const count = selectedSeats.length;
+
+      if (count === 0) {
+        resultDiv.innerHTML = `<b>Please select at least one seat.</b>`;
+        return;
+      }
+
+      const eventType = selectEvent.options[selectEvent.selectedIndex].text;
+      const date = dateInput.value;
+      const time = timeInput.value;
+
+      const price = prices[selectEvent.value];
+      const total = count * price;
+
+      resultDiv.innerHTML = `
+        <b>✅ Booking Confirmed</b><br/>
+        Event: ${eventType}<br/>
+        Date: ${date}<br/>
+        Time: ${time}<br/>
+        Tickets: ${count}<br/>
+        Total: ₹${total}
+      `;
+    });
+  </script>
+</body>
+</html>
